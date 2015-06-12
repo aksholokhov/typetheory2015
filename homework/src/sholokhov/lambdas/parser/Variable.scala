@@ -1,11 +1,13 @@
 package sholokhov.lambdas.parser
 
-import scala.collection.immutable.HashSet
+import scala.collection.immutable.TreeSet
+
+import scala.collection.mutable
 
 /**
  * Created by Шолохов on 27.05.2015.
  */
-case class Variable(name: String) extends Term with Comparable[Variable]{
+case class Variable(var name: String) extends Term with Comparable[Variable]{
   override def toString = name
 
   override def getFreeVariables(vars: Set[Variable]): Set[Variable] = vars + this
@@ -14,9 +16,12 @@ case class Variable(name: String) extends Term with Comparable[Variable]{
 
   override def renameVariable(v: Variable): Unit = {
     if (v.name.equals(name)) {
-      this.name += "'"
+      name = name.concat("'")
     }
   }
 
   override def getChainedVariables(vars: Set[Variable]): Set[Variable] = vars
+
+  override def getAllVariables(vars: Set[Variable]): Set[Variable] = vars + this
 }
+

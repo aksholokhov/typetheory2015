@@ -9,9 +9,10 @@ import scala.io.Source
 object Task1 {
   def main(args: Array[String]) {
     val parser = new NonTypedLambdaParser()
-    val out = new PrintWriter("tests/task1/output")
-    val str = Source.fromFile("tests/task1/test1.in").getLines().map(_.toString.replace(" ", "_"))
-      .map( parser.parseAll(parser.expression, _).get).foreach(v => out.println("(" + v + ")"))
+    val HOME_DIR = "/home/alexsholokhov/Документы/typetheory2015/homework/"
+    val out = new PrintWriter(HOME_DIR + "tests/task1/output")
+    val str = Source.fromFile(HOME_DIR + "tests/task1/test1.in").getLines().map(_.toString.replace(" ", "_"))
+      .map( parser.parseAll(parser.expression, _).get).foreach(v => println(v))
     out.close()
   }
 }

@@ -6,5 +6,6 @@ package sholokhov.lambdas.parser
 trait Term {
   def getFreeVariables(vars: Set[Variable]): Set[Variable]
   def getChainedVariables(vars: Set[Variable]): Set[Variable]
+  def getAllVariables(vars: Set[Variable]): Set[Variable]
   def renameVariable(v: Variable): Unit
 }
