@@ -23,22 +23,30 @@ object Helpers {
   
   def force_subst(where: Term, x: Variable, t: Term, boundedVars: Set[Variable]): Term = where match {
     case v: Variable => if (x == v && !boundedVars.contains(x)) t else v
-    case Lambda(v, body) => {
+    case Lambda(v, body) =>
       if (t.getAllVariables(new TreeSet[Variable]()).contains(v)) t.renameVariable(v)
       Lambda(v, force_subst(body, x, t, boundedVars + v))
-    }
     case Application(a, b) => Application(force_subst(a, x, t, boundedVars), force_subst(b, x, t, boundedVars))
   }
   
   def normalizeTerm(what: Term): Term = what match {
     case Application(a, b) => normalizeTerm(a) match {
-      case Lambda(v, body) => {
+      case Lambda(v, body) =>
         normalizeTerm(force_subst(body, v, b, new TreeSet[Variable]()))
-      }
       case n => Application(a, normalizeTerm(b))
     }
     case Lambda(v, body) => Lambda(v, normalizeTerm(body))
     case _ => what
+  }
+
+  def normalizeTermAtOnce(what: Term): Term = {
+    what match {
+      case Application(a, b) => a match {
+        case Lambda(v, body) => force_subst(body, v, b, new TreeSet[Variable]())
+        case app: Application => Application(normalizeTermAtOnce(a), b)
+      }
+      case _ => what
+    }
   }
 
   def termToList(term: Term): List[Term] = term match {

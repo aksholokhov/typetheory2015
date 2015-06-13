@@ -15,7 +15,8 @@ object Task3 {
   def main(args: Array[String]) {
     val HOME_DIR = "/home/alexsholokhov/Документы/typetheory2015/homework/"
     val parser = new NonTypedLambdaParser
-    Source.fromFile(HOME_DIR + "tests/task3/test1.in").getLines().map(_.toString.replace(" ", "_")) .map(parser.parseAll(parser.condition, _)
+    val out = new PrintWriter(HOME_DIR + "tests/task3/task3.out")
+    Source.fromFile(HOME_DIR + "tests/task3/task3.in").getLines().map(_.toString.replace(" ", "_")) .map(parser.parseAll(parser.condition, _)
       .get).map({
         case Condition(where, v, what) =>
           subst(where, v, what, new TreeSet[Variable]()) match {
@@ -23,6 +24,7 @@ object Task3 {
             case None => "Нет свободы для подстановки для переменной " + v
           }
         case _ => "Invalid format"
-    }).foreach(println(_))
+    }).foreach(out.println)
+    out.close()
   }
 }

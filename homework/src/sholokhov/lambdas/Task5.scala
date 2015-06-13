@@ -1,5 +1,7 @@
 package sholokhov.lambdas
 
+import java.io.PrintWriter
+
 import sholokhov.lambdas.parser.ArithmeticParser
 import sholokhov.lambdas.parser.ArithmeticTerms._
 
@@ -12,9 +14,11 @@ object Task5 {
   def main(args: Array[String]) {
     val HOME_DIR = "/home/alexsholokhov/Документы/typetheory2015/homework/"
     val parser = new ArithmeticParser
-    val ans = unify(Source.fromFile(HOME_DIR + "tests/task5/test1.in").getLines() .map(parser.parseAll(parser.equation, _)
+    val out = new PrintWriter(HOME_DIR + "tests/task5/task5.out")
+    val ans = unify(Source.fromFile(HOME_DIR + "tests/task5/task5.in").getLines() .map(parser.parseAll(parser.equation, _)
       .get).toList)
-    if (ans.isDefined) ans.get.foreach(println(_))
-    else println("no solution")
+    if (ans.isDefined) ans.get.foreach(out.println)
+    else out.println("no solution")
+    out.close()
   }
 }
