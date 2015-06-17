@@ -12,10 +12,9 @@ import scala.io.Source
  */
 object Task5 {
   def main(args: Array[String]) {
-    val HOME_DIR = "/home/alexsholokhov/Документы/typetheory2015/homework/"
     val parser = new ArithmeticParser
-    val out = new PrintWriter(HOME_DIR + "tests/task5/task5.out")
-    val ans = unify(Source.fromFile(HOME_DIR + "tests/task5/task5.in").getLines() .map(parser.parseAll(parser.equation, _)
+    val out = new PrintWriter("task5.out")
+    val ans = unify(Source.fromFile("task5.in").getLines() .map(parser.parseAll(parser.equation, _)
       .get).toList)
     if (ans.isDefined) ans.get.foreach(out.println)
     else out.println("no solution")
