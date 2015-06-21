@@ -11,7 +11,7 @@ object Task5 {
     val parser = new ArithmeticParser
     val out = new PrintWriter("task5.out")
     val ans = unify(Source.fromFile("task5.in").getLines() .map(parser.parseAll(parser.equation, _)
-      .get).toList)
+      .get).toList, 0)
     if (ans.isDefined) ans.get.foreach(out.println)
     else out.println("no solution")
     out.close()

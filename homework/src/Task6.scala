@@ -2,6 +2,7 @@ import java.io.PrintWriter
 
 import Helpers._
 
+import scala.collection.immutable.TreeSet
 import scala.io.Source
 
 /**
@@ -12,7 +13,7 @@ object Task6 {
     val parser = new NonTypedLambdaParser()
     val out = new PrintWriter("task6.out")
     Source.fromFile("task6.in").getLines().map(_.toString.replace(" ", "_"))
-      .map( parser.parseAll(parser.expression, _).get).map(t => constructRestrictions(termToList(t)) match {
+      .map( parser.parseAll(parser.expression, _).get).map(t => constructRestrictions(termToList(uniquefyVars(t, new TreeSet[Variable]())._1)) match {
         case (None, _) => "Not typeable"
         case (Some(a), map) => printAsType(reconstructType(t, a, map))
     }).foreach(out.println)

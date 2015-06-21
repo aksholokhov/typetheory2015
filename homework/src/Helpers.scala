@@ -17,7 +17,8 @@ object Helpers {
       case Some(body2) => Some(Lambda(va, body2))
     }
   }
-  
+
+  //TODO: rename fix
   def force_subst(where: Term, x: Variable, t: Term, boundedVars: Set[Variable]): Term = where match {
     case v: Variable => if (x == v && !boundedVars.contains(x)) t else v
     case Lambda(v, body) =>
@@ -25,15 +26,25 @@ object Helpers {
       Lambda(v, force_subst(body, x, t, boundedVars + v))
     case Application(a, b) => Application(force_subst(a, x, t, boundedVars), force_subst(b, x, t, boundedVars))
   }
+
+  def parallelReduce(what: Term): Term = what match {
+    case Application(Lambda(v, body), t2) => force_subst(body, v, t2, new TreeSet[Variable]())
+    case Application(t1, t2) => Application(parallelReduce(t1), parallelReduce(t2))
+    case Lambda(v, body) => Lambda(v, parallelReduce(body))
+    case v: Variable => v
+  }
   
-  def normalizeTerm(what: Term): Term = what match {
-    case Application(a, b) => normalizeTerm(a) match {
+  def normalizeTerm(what: Term): Term =  {
+    val tt = parallelReduce(what)
+    println(tt)
+    if (tt == what) what else normalizeTerm(tt)
+/*    case Application(a, b) => normalizeTerm(a) match {
       case Lambda(v, body) =>
         normalizeTerm(force_subst(body, v, b, new TreeSet[Variable]()))
       case n => Application(a, normalizeTerm(b))
     }
     case Lambda(v, body) => Lambda(v, normalizeTerm(body))
-    case _ => what
+    case _ => what */
   }
 
   def normalizeTermAtOnce(what: Term): Term = {
@@ -52,16 +63,22 @@ object Helpers {
     case t@Application(t1, t2) => List[Term](t) ::: termToList(t1) ::: termToList(t2)
   }
 
-  /*def uniquefyVars(term: Term, used: Set[Variable]): Set[Variable] = term match {
-    case t@Application(t1, t2) => uniquefyVars(t2, uniquefyVars(t1, used))
+  def uniquefyVars(term: Term, used: Set[Variable]): (Term, Set[Variable]) = term match {
+    case t@Application(t1, t2) =>
+      val nt1 = uniquefyVars(t1, used)
+      val nt2 = uniquefyVars(t2, nt1._2)
+      (Application(nt1._1, nt2._1), nt2._2)
+
     case l@Lambda(v, body) => if (used.contains(v)) {
-      renameVariable(l, v, genNewName(v, used))
-      uniquefyVars(body, used + v)
-    }  else {
-      uniquefyVars(body, used)
+      val n = genNewName(v, used)
+      renameVariable(body, v, n)
+      renameVariable(v, v, n)
     }
-    case v: Variable => if (used.contains(v)) renameVariable(v, v, genNewName(v, used));
-  } */
+      val nt = uniquefyVars(body, used + v)
+      (l, nt._2)
+
+    case v: Variable => (v, used)
+  }
 
   def genNewName(v: Variable, used: Set[Variable]): String = {
     var name = v.name
@@ -71,13 +88,11 @@ object Helpers {
 
   def renameVariable(term: Term, v: Variable, newName: String): Unit = term match {
     case Application(t1, t2) => renameVariable(t1, v, newName); renameVariable(t2, v, newName)
-    case Lambda(lv, body) => if (lv == v) lv.name = newName; renameVariable(body, v, newName)
+    case Lambda(lv, body) => renameVariable(lv, v, newName); renameVariable(body, v, newName)
     case t: Variable => if (t == v) t.name = newName
   }
 
   def constructRestrictions(list: List[Term]): (Option[List[Equation]], mutable.HashMap[Term, ArithmeticVariable]) = {
-    list.foreach(println(_))
-    println
 
     val vargen = new VarGen
     val map = new mutable.HashMap[Term, ArithmeticVariable]()
@@ -91,17 +106,25 @@ object Helpers {
 
     val constr = list.map({
       case v: Variable => Equation(assign(v), assign(v))
-      case l@Lambda(v, body) => Equation(assign(l), Function("f", List[ArithmeticTerm](assign(v), assign(body))))
-      case t@Application(t1, t2) => Equation(assign(t1), Function("f", List[ArithmeticTerm](assign(t2), assign(t))))
+      case l@Lambda(v, body) => {
+        val lname = assign(l)
+        val vname = assign(v)
+        val bodyname = assign(body)
+        Equation(lname, Function("f", List[ArithmeticTerm](vname, bodyname)))
+      }
+      case t@Application(t1, t2) => {
+        val appname = assign(t)
+        val t1name = assign(t1)
+        val t2name = assign(t2)
+        Equation(t1name, Function("f", List[ArithmeticTerm](t2name, appname)))
+      }
     })
-    constr.foreach(println(_))
-
-    (unify(constr), map)
+    (unify(constr, 0), map)
   }
 
   def reconstructType(term: Term, eqs: List[Equation], map: mutable.HashMap[Term, ArithmeticVariable]): ArithmeticTerm = {
-    var t0 = eqs.head.b
-    eqs.foreach(eq => t0 = arithm_subst(t0, eq.a.asInstanceOf[ArithmeticVariable], eq.b))
+    val t0 = map.get(term).get
+    eqs.foreach(eq => if (eq.a == t0) return eq.b)
     t0
   }
 

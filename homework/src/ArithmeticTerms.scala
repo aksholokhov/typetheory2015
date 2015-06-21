@@ -55,27 +55,50 @@ object ArithmeticTerms {
       new ArithmeticVariable("x" + counter)
     }
   }
-
-  def unify(c: List[Equation]): Option[List[Equation]] = c match {
+/*
+  def unify(c: List[Equation], n: Int): Option[List[Equation]] = c match {
     case Equation(s, t) :: tail => {
-      if (s == t) unify(tail)
+      if (c.size == n) Some(c) else
+      if (s == t) unify(tail, 0)
       else {
         (s, t) match {
-          case (x: ArithmeticVariable, t: ArithmeticTerm) => if (!getVars(t).contains(x)) {
-            unify(arithm_subst(tail, x, t)) match {
-              case Some(ans) => Some(Equation(x, t) :: ans)
-              case None => None
-            }
+          case (x: ArithmeticVariable, t: ArithmeticTerm) => if (!getVars(t).contains(x) & tail.foldLeft(false)((ans, eq) => getVars(eq).contains(x) | ans)) {
+            unify(arithm_subst(tail, x, t) ::: List[Equation](Equation(x, t)), 0)
           } else None
-          case (t: ArithmeticTerm, x : ArithmeticVariable) => unify(Equation(x, t) :: tail)
+          case (t: ArithmeticTerm, x : ArithmeticVariable) => unify(Equation(x, t) :: tail, 0)
           case (Function(s_name, s_args), Function(t_name, t_args)) => if (s_args.size != t_args.size | !s_name.equals(t_name) ) None else {
-            unify(s_args.zip(t_args).map(x => Equation(x._1, x._2)) ::: tail)
+            unify(s_args.zip(t_args).map(x => Equation(x._1, x._2)) ::: tail, 0)
           }
         }
       }
     }
+    case a :: b :: tail => unify((b :: tail) ::: List[Equation](a), n + 1)
     case Nil => Some(Nil)
   }
+  */
+
+  def unify(c: List[Equation], n: Int): Option[List[Equation]] =
+    if (c.size == n) Some(c) else c match {
+    case Equation(s, t) :: tail =>
+        (s, t) match {
+          case _ if s == t => unify(tail, 0)
+          case (x: ArithmeticVariable, t: ArithmeticTerm) if !getVars(t).contains(x) & (tail == Nil | tail.foldLeft(false)((ans, eq) => getVars(eq).contains(x))) =>
+            val pp = arithm_subst(tail, x, t)
+            unify(pp, 0) match {
+              case Some(ans) => Some(Equation(x, t) :: ans)
+              case None => None
+            }
+          case (t: ArithmeticTerm, x : ArithmeticVariable) => unify(Equation(x, t) :: tail, 0)
+          case (Function(s_name, s_args), Function(t_name, t_args)) => if (s_args.size != t_args.size | !s_name.equals(t_name) ) None else {
+            unify(s_args.zip(t_args).map(x => Equation(x._1, x._2)) ::: tail, 0)
+          }
+          case _ => c match {
+            case a :: b :: last => unify((b :: last) ::: List[Equation](a), n + 1)
+            case Nil => Some(Nil)
+          }
+        }
+  }
+
 /*
   def robinsonUnify(c: List[Equation]): Option[List[Equation]] = c match {
     case Equation(s, t) :: tail => {
@@ -109,6 +132,7 @@ object ArithmeticTerms {
   }
 
   def getVars(where: ArithmeticTerm): mutable.HashSet[ArithmeticVariable] = where match {
+    case e: Equation => getVars(e.a) ++ getVars(e.b)
     case v: ArithmeticVariable => new mutable.HashSet[ArithmeticVariable]() + v
     case t: ArithmeticConstant => new mutable.HashSet[ArithmeticVariable]()
     case Function(name, args) => args.foldLeft(new mutable.HashSet[ArithmeticVariable]())((set, e) => set ++ getVars(e))
