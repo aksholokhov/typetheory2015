@@ -52,16 +52,20 @@ object Helpers {
     case t@Application(t1, t2) => List[Term](t) ::: termToList(t1) ::: termToList(t2)
   }
 
-  /*def uniquefyVars(term: Term, used: Set[Variable]): Set[Variable] = term match {
-    case t@Application(t1, t2) => uniquefyVars(t2, uniquefyVars(t1, used))
+  def uniquefyVars(term: Term, used: Set[Variable]): (Term, Set[Variable]) = term match {
+    case t@Application(t1, t2) =>
+      val nt1 = uniquefyVars(t1, used)
+      val nt2 = uniquefyVars(t2, nt1._2)
+      (Application(nt1._1, nt2._1), nt2._2)
+
     case l@Lambda(v, body) => if (used.contains(v)) {
       renameVariable(l, v, genNewName(v, used))
       uniquefyVars(body, used + v)
     }  else {
       uniquefyVars(body, used)
     }
-    case v: Variable => if (used.contains(v)) renameVariable(v, v, genNewName(v, used));
-  } */
+    case v: Variable => if (used.contains(v)) {renameVariable(v, v, genNewName(v, used)); (v, used + v)} else (v, used)
+  }
 
   def genNewName(v: Variable, used: Set[Variable]): String = {
     var name = v.name
