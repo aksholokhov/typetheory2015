@@ -22,8 +22,8 @@ class NonTypedLambdaParser extends RegexParsers with PackratParsers{
 
   lazy val atom: PackratParser[Term] = "(" ~> expression <~ ")" | variable
 
-  lazy val variable: PackratParser[Variable] = (char ~ opt(number) ~ opt("'")) ^^ {
-    case a~b~c => Variable(a + (if (b.isDefined) b.get else "") + (if (c.isDefined) b.get else ""))
+  lazy val variable: PackratParser[Variable] = (char ~ opt(number) ~ opt(rep("'"))) ^^ {
+    case a~b~c => Variable(a + (if (b.isDefined) b.get else "") + (if (c.isDefined) c.get.foldLeft("")((str, ap) => str + ap) else ""))
   }
 
   def parseAll[T](p: Parser[T], input: String) = parse(p, new PackratReader(new CharArrayReader(input.toCharArray)))

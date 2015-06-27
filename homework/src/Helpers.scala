@@ -10,12 +10,29 @@ object Helpers {
     } else Some(x)
     case Application(a, b) => (subst(a, x, t, boundedVars), subst(b, x, t, boundedVars)) match {
       case (None, Some(_)) | (Some(_), None) | (None, None) => None
-      case (Some(k), Some (p)) => Some(Application(k, p))
+      case (Some(k), Some(p)) => Some(Application(k, p))
     }
     case Lambda(va, body) => subst(body, x, t, boundedVars + va) match {
       case None => None
       case Some(body2) => Some(Lambda(va, body2))
     }
+  }
+
+  def simpleSubst(where: Term, x: Variable, t: Term): Term = where match {
+    case v: Variable => if (x.name.equals(v.name)) t else x
+    case Application(a, b) => Application(simpleSubst(a, x, t), simpleSubst(b, x, t))
+    case Lambda(va, body) => simpleSubst(body, x, t)
+  }
+
+
+  case class Substitution(a: Term, v: Variable, b: Term) extends Term {
+    override def getFreeVariables(vars: Set[Variable]): Set[Variable] = ???
+
+    override def getChainedVariables(vars: Set[Variable]): Set[Variable] = ???
+
+    override def renameVariable(v: Variable): Unit = ???
+
+    override def getAllVariables(vars: Set[Variable]): Set[Variable] = ???
   }
 
   //TODO: rename fix
@@ -27,34 +44,32 @@ object Helpers {
     case Application(a, b) => Application(force_subst(a, x, t, boundedVars), force_subst(b, x, t, boundedVars))
   }
 
-  def parallelReduce(what: Term): Term = what match {
-    case Application(Lambda(v, body), t2) => force_subst(body, v, t2, new TreeSet[Variable]())
-    case Application(t1, t2) => Application(parallelReduce(t1), parallelReduce(t2))
-    case Lambda(v, body) => Lambda(v, parallelReduce(body))
+  def parallelReduce(what: Term, map: mutable.HashMap[Term, Term]): Term = what match {
+    case Application(Lambda(v, body), t2) =>
+      val s = Substitution(body, v, t2)
+      if (map.contains(s))
+        map.get(s).get
+      else {
+        val res = simpleSubst(body, v, t2)
+        map.put(s, res)
+        res
+      }
+    case Application(t1, t2) => Application(parallelReduce(t1, map), parallelReduce(t2, map))
+    case Lambda(v, body) => Lambda(v, parallelReduce(body, map))
     case v: Variable => v
   }
-  
-  def normalizeTerm(what: Term): Term =  {
-    val tt = parallelReduce(what)
-    println(tt)
-    if (tt == what) what else normalizeTerm(tt)
-/*    case Application(a, b) => normalizeTerm(a) match {
+
+  def normalizeTerm(what: Term, map: mutable.HashMap[Term, Term]): Term = {
+    val tt = parallelReduce(what, map)
+    //  print(tt)
+    if (tt == what) what else normalizeTerm(tt, map)
+    /*    case Application(a, b) => normalizeTerm(a) match {
       case Lambda(v, body) =>
         normalizeTerm(force_subst(body, v, b, new TreeSet[Variable]()))
       case n => Application(a, normalizeTerm(b))
     }
     case Lambda(v, body) => Lambda(v, normalizeTerm(body))
     case _ => what */
-  }
-
-  def normalizeTermAtOnce(what: Term): Term = {
-    what match {
-      case Application(a, b) => a match {
-        case Lambda(v, body) => force_subst(body, v, b, new TreeSet[Variable]())
-        case app: Application => Application(normalizeTermAtOnce(a), b)
-      }
-      case _ => what
-    }
   }
 
   def termToList(term: Term): List[Term] = term match {
@@ -98,7 +113,8 @@ object Helpers {
     val map = new mutable.HashMap[Term, ArithmeticVariable]()
 
     def assign(t: Term): ArithmeticVariable =
-      if (map.get(t).isDefined) map.get(t).get else {
+      if (map.get(t).isDefined) map.get(t).get
+      else {
         val a = vargen.getNew
         map.put(t, a)
         a
@@ -119,6 +135,7 @@ object Helpers {
         Equation(t1name, Function("f", List[ArithmeticTerm](t2name, appname)))
       }
     })
+   // constr.foreach(println(_))
     (unify(constr, 0), map)
   }
 

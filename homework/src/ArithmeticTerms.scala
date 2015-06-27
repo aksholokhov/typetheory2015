@@ -77,18 +77,22 @@ object ArithmeticTerms {
   }
   */
 
-  def unify(c: List[Equation], n: Int): Option[List[Equation]] =
+  def unify(c: List[Equation], n: Int): Option[List[Equation]] = {
+    //println(n + " " + c.size)
     if (c.size == n) Some(c) else c match {
     case Equation(s, t) :: tail =>
         (s, t) match {
           case _ if s == t => unify(tail, 0)
+          case (x: ArithmeticVariable, t: ArithmeticTerm) if getVars(t).contains(x) => None
           case (x: ArithmeticVariable, t: ArithmeticTerm) if !getVars(t).contains(x) & (tail == Nil | tail.foldLeft(false)((ans, eq) => getVars(eq).contains(x))) =>
             val pp = arithm_subst(tail, x, t)
             unify(pp, 0) match {
               case Some(ans) => Some(Equation(x, t) :: ans)
               case None => None
             }
-          case (t: ArithmeticTerm, x : ArithmeticVariable) => unify(Equation(x, t) :: tail, 0)
+          case (t: Function, x : ArithmeticVariable)  => {
+            unify(Equation(x, t) :: tail, 0)
+          }
           case (Function(s_name, s_args), Function(t_name, t_args)) => if (s_args.size != t_args.size | !s_name.equals(t_name) ) None else {
             unify(s_args.zip(t_args).map(x => Equation(x._1, x._2)) ::: tail, 0)
           }
@@ -97,6 +101,7 @@ object ArithmeticTerms {
             case Nil => Some(Nil)
           }
         }
+    }
   }
 
 /*
