@@ -135,12 +135,15 @@ object Helpers {
         Equation(t1name, Function("f", List[ArithmeticTerm](t2name, appname)))
       }
     })
-   // constr.foreach(println(_))
+    //constr.foreach(println(_))
+    val c = unify(constr, 0)
+   // c.foreach(println(_))
     (unify(constr, 0), map)
   }
 
   def reconstructType(term: Term, eqs: List[Equation], map: mutable.HashMap[Term, ArithmeticVariable]): ArithmeticTerm = {
     val t0 = map.get(term).get
+ //   println("\n" + t0)
     eqs.foreach(eq => if (eq.a == t0) return eq.b)
     t0
   }
